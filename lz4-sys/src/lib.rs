@@ -5,7 +5,7 @@ extern crate libc;
     target_arch = "wasm32",
     not(any(target_env = "wasi", target_os = "wasi"))
 )))]
-use libc::{c_void, c_char, c_uint, size_t, c_int, c_ulonglong};
+use libc::{c_char, c_int, c_uint, c_ulonglong, c_void, size_t};
 
 #[cfg(all(
     target_arch = "wasm32",
@@ -17,7 +17,7 @@ extern crate std;
     target_arch = "wasm32",
     not(any(target_env = "wasi", target_os = "wasi"))
 ))]
-use std::os::raw::{c_void, c_char, c_uint, c_int};
+use std::os::raw::{c_char, c_int, c_uint, c_ulonglong, c_void};
 
 #[cfg(all(
     target_arch = "wasm32",
@@ -51,8 +51,7 @@ pub enum BlockSize {
 impl BlockSize {
     pub fn get_size(&self) -> usize {
         match self {
-            &BlockSize::Default |
-            &BlockSize::Max64KB => 64 * 1024,
+            &BlockSize::Default | &BlockSize::Max64KB => 64 * 1024,
             &BlockSize::Max256KB => 256 * 1024,
             &BlockSize::Max1MB => 1 * 1024 * 1024,
             &BlockSize::Max4MB => 4 * 1024 * 1024,
@@ -81,7 +80,6 @@ pub enum FrameType {
     SkippableFrame,
 }
 
-
 #[derive(Clone, Debug)]
 #[repr(u32)]
 pub enum BlockChecksum {
@@ -106,8 +104,8 @@ pub struct LZ4FFrameInfo {
 pub struct LZ4FPreferences {
     pub frame_info: LZ4FFrameInfo,
     pub compression_level: c_uint, // 0 == default (fast mode); values above 16 count as 16
-    pub auto_flush: c_uint, // 1 == always flush : reduce need for tmp buffer
-    pub favor_dec_speed: c_uint, // 1 == favor decompression speed over ratio, requires level 10+
+    pub auto_flush: c_uint,        // 1 == always flush : reduce need for tmp buffer
+    pub favor_dec_speed: c_uint,   // 1 == favor decompression speed over ratio, requires level 10+
     pub reserved: [c_uint; 3],
 }
 
@@ -142,19 +140,41 @@ extern "C" {
 
     // int LZ4_compress_default(const char* source, char* dest, int sourceSize, int maxDestSize);
     #[allow(non_snake_case)]
-    pub fn LZ4_compress_default (source: *const c_char, dest: *mut c_char, sourceSize: c_int, maxDestSize: c_int) -> c_int;
+    pub fn LZ4_compress_default(
+        source: *const c_char,
+        dest: *mut c_char,
+        sourceSize: c_int,
+        maxDestSize: c_int,
+    ) -> c_int;
 
     // int LZ4_compress_fast (const char* source, char* dest, int sourceSize, int maxDestSize, int acceleration);
     #[allow(non_snake_case)]
-    pub fn LZ4_compress_fast (source: *const c_char, dest: *mut c_char, sourceSize: c_int, maxDestSize: c_int, acceleration: c_int) -> c_int;
+    pub fn LZ4_compress_fast(
+        source: *const c_char,
+        dest: *mut c_char,
+        sourceSize: c_int,
+        maxDestSize: c_int,
+        acceleration: c_int,
+    ) -> c_int;
 
     // int LZ4_compress_HC (const char* src, char* dst, int srcSize, int dstCapacity, int compressionLevel);
     #[allow(non_snake_case)]
-    pub fn LZ4_compress_HC (src: *const c_char, dst: *mut c_char, srcSize: c_int, dstCapacity: c_int, compressionLevel: c_int) -> c_int;
+    pub fn LZ4_compress_HC(
+        src: *const c_char,
+        dst: *mut c_char,
+        srcSize: c_int,
+        dstCapacity: c_int,
+        compressionLevel: c_int,
+    ) -> c_int;
 
     // int LZ4_decompress_safe (const char* source, char* dest, int compressedSize, int maxDecompressedSize);
     #[allow(non_snake_case)]
-    pub fn LZ4_decompress_safe (source: *const c_char, dest: *mut c_char, compressedSize: c_int, maxDecompressedSize: c_int) -> c_int;
+    pub fn LZ4_decompress_safe(
+        source: *const c_char,
+        dest: *mut c_char,
+        compressedSize: c_int,
+        maxDecompressedSize: c_int,
+    ) -> c_int;
 
     // unsigned    LZ4F_isError(LZ4F_errorCode_t code);
     pub fn LZ4F_isError(code: size_t) -> c_uint;
@@ -176,9 +196,10 @@ extern "C" {
     // LZ4F_errorCode_t LZ4F_createCompressionContext(
     //                                   LZ4F_compressionContext_t* LZ4F_compressionContextPtr,
     //                                   unsigned version);
-    pub fn LZ4F_createCompressionContext(ctx: &mut LZ4FCompressionContext,
-                                         version: c_uint)
-                                         -> LZ4FErrorCode;
+    pub fn LZ4F_createCompressionContext(
+        ctx: &mut LZ4FCompressionContext,
+        version: c_uint,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_errorCode_t LZ4F_freeCompressionContext(
     //                                  LZ4F_compressionContext_t LZ4F_compressionContext);
@@ -197,11 +218,12 @@ extern "C" {
     //                           void* dstBuffer,
     //                           size_t dstMaxSize,
     //                           const LZ4F_preferences_t* preferencesPtr);
-    pub fn LZ4F_compressBegin(ctx: LZ4FCompressionContext,
-                              dstBuffer: *mut u8,
-                              dstMaxSize: size_t,
-                              preferencesPtr: *const LZ4FPreferences)
-                              -> LZ4FErrorCode;
+    pub fn LZ4F_compressBegin(
+        ctx: LZ4FCompressionContext,
+        dstBuffer: *mut u8,
+        dstMaxSize: size_t,
+        preferencesPtr: *const LZ4FPreferences,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_compressBound() :
     // Provides the minimum size of Dst buffer given srcSize to handle worst case situations.
@@ -210,9 +232,10 @@ extern "C" {
     // Note that different preferences will produce in different results.
     //
     // size_t LZ4F_compressBound(size_t srcSize, const LZ4F_preferences_t* preferencesPtr);
-    pub fn LZ4F_compressBound(srcSize: size_t,
-                              preferencesPtr: *const LZ4FPreferences)
-                              -> LZ4FErrorCode;
+    pub fn LZ4F_compressBound(
+        srcSize: size_t,
+        preferencesPtr: *const LZ4FPreferences,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_compressUpdate()
     // LZ4F_compressUpdate() can be called repetitively to compress as much data as necessary.
@@ -231,13 +254,14 @@ extern "C" {
     //                            const void* srcBuffer,
     //                            size_t srcSize,
     //                            const LZ4F_compressOptions_t* compressOptionsPtr);
-    pub fn LZ4F_compressUpdate(ctx: LZ4FCompressionContext,
-                               dstBuffer: *mut u8,
-                               dstMaxSize: size_t,
-                               srcBuffer: *const u8,
-                               srcSize: size_t,
-                               compressOptionsPtr: *const LZ4FCompressOptions)
-                               -> size_t;
+    pub fn LZ4F_compressUpdate(
+        ctx: LZ4FCompressionContext,
+        dstBuffer: *mut u8,
+        dstMaxSize: size_t,
+        srcBuffer: *const u8,
+        srcSize: size_t,
+        compressOptionsPtr: *const LZ4FCompressOptions,
+    ) -> size_t;
 
     // LZ4F_flush()
     // Should you need to create compressed data immediately, without waiting for a block
@@ -252,11 +276,12 @@ extern "C" {
     //                   void* dstBuffer,
     //                   size_t dstMaxSize,
     //                   const LZ4F_compressOptions_t* compressOptionsPtr);
-    pub fn LZ4F_flush(ctx: LZ4FCompressionContext,
-                      dstBuffer: *mut u8,
-                      dstMaxSize: size_t,
-                      compressOptionsPtr: *const LZ4FCompressOptions)
-                      -> LZ4FErrorCode;
+    pub fn LZ4F_flush(
+        ctx: LZ4FCompressionContext,
+        dstBuffer: *mut u8,
+        dstMaxSize: size_t,
+        compressOptionsPtr: *const LZ4FCompressOptions,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_compressEnd()
     // When you want to properly finish the compressed frame, just call LZ4F_compressEnd().
@@ -272,11 +297,12 @@ extern "C" {
     //                         void* dstBuffer,
     //                         size_t dstMaxSize,
     //                         const LZ4F_compressOptions_t* compressOptionsPtr);
-    pub fn LZ4F_compressEnd(ctx: LZ4FCompressionContext,
-                            dstBuffer: *mut u8,
-                            dstMaxSize: size_t,
-                            compressOptionsPtr: *const LZ4FCompressOptions)
-                            -> LZ4FErrorCode;
+    pub fn LZ4F_compressEnd(
+        ctx: LZ4FCompressionContext,
+        dstBuffer: *mut u8,
+        dstMaxSize: size_t,
+        compressOptionsPtr: *const LZ4FCompressOptions,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_createDecompressionContext() :
     // The first thing to do is to create a decompressionContext object, which will be used
@@ -292,9 +318,10 @@ extern "C" {
     //
     // LZ4F_errorCode_t LZ4F_createDecompressionContext(LZ4F_decompressionContext_t* ctxPtr,
     //                                                  unsigned version);
-    pub fn LZ4F_createDecompressionContext(ctx: &mut LZ4FDecompressionContext,
-                                           version: c_uint)
-                                           -> LZ4FErrorCode;
+    pub fn LZ4F_createDecompressionContext(
+        ctx: &mut LZ4FDecompressionContext,
+        version: c_uint,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_errorCode_t LZ4F_freeDecompressionContext(LZ4F_decompressionContext_t ctx);
     pub fn LZ4F_freeDecompressionContext(ctx: LZ4FDecompressionContext) -> LZ4FErrorCode;
@@ -315,11 +342,12 @@ extern "C" {
     // size_t LZ4F_getFrameInfo(LZ4F_decompressionContext_t ctx,
     // 					LZ4F_frameInfo_t* frameInfoPtr,
     // 					const void* srcBuffer, size_t* srcSizePtr);
-    pub fn LZ4F_getFrameInfo(ctx: LZ4FDecompressionContext,
-                             frameInfoPtr: &mut LZ4FFrameInfo,
-                             srcBuffer: *const u8,
-                             srcSizePtr: &mut size_t)
-                             -> LZ4FErrorCode;
+    pub fn LZ4F_getFrameInfo(
+        ctx: LZ4FDecompressionContext,
+        frameInfoPtr: &mut LZ4FFrameInfo,
+        srcBuffer: *const u8,
+        srcSizePtr: &mut size_t,
+    ) -> LZ4FErrorCode;
 
     // LZ4F_decompress()
     // Call this function repetitively to regenerate data compressed within srcBuffer.
@@ -357,13 +385,14 @@ extern "C" {
     //                        void* dstBuffer, size_t* dstSizePtr,
     //                        const void* srcBuffer, size_t* srcSizePtr,
     //                        const LZ4F_decompressOptions_t* optionsPtr);
-    pub fn LZ4F_decompress(ctx: LZ4FDecompressionContext,
-                           dstBuffer: *mut u8,
-                           dstSizePtr: &mut size_t,
-                           srcBuffer: *const u8,
-                           srcSizePtr: &mut size_t,
-                           optionsPtr: *const LZ4FDecompressOptions)
-                           -> LZ4FErrorCode;
+    pub fn LZ4F_decompress(
+        ctx: LZ4FDecompressionContext,
+        dstBuffer: *mut u8,
+        dstSizePtr: &mut size_t,
+        srcBuffer: *const u8,
+        srcSizePtr: &mut size_t,
+        optionsPtr: *const LZ4FDecompressOptions,
+    ) -> LZ4FErrorCode;
 
     // int LZ4_versionNumber(void)
     pub fn LZ4_versionNumber() -> c_int;
@@ -378,11 +407,12 @@ extern "C" {
     //                           const char* source,
     //                           char* dest,
     //                           int inputSize)
-    pub fn LZ4_compress_continue(LZ4_stream: *mut LZ4StreamEncode,
-                                 source: *const u8,
-                                 dest: *mut u8,
-                                 input_size: c_int)
-                                 -> c_int;
+    pub fn LZ4_compress_continue(
+        LZ4_stream: *mut LZ4StreamEncode,
+        source: *const u8,
+        dest: *mut u8,
+        input_size: c_int,
+    ) -> c_int;
 
     // int LZ4_freeStream(LZ4_stream_t* LZ4_streamPtr)
     pub fn LZ4_freeStream(LZ4_stream: *mut LZ4StreamEncode) -> c_int;
@@ -390,10 +420,11 @@ extern "C" {
     // int LZ4_setStreamDecode (LZ4_streamDecode_t* LZ4_streamDecode,
     //                          const char* dictionary,
     //                          int dictSize)
-    pub fn LZ4_setStreamDecode(LZ4_stream: *mut LZ4StreamDecode,
-                               dictionary: *const u8,
-                               dict_size: c_int)
-                               -> c_int;
+    pub fn LZ4_setStreamDecode(
+        LZ4_stream: *mut LZ4StreamDecode,
+        dictionary: *const u8,
+        dict_size: c_int,
+    ) -> c_int;
 
     // LZ4_streamDecode_t* LZ4_createStreamDecode(void)
     pub fn LZ4_createStreamDecode() -> *mut LZ4StreamDecode;
@@ -403,12 +434,13 @@ extern "C" {
     //                                  char* dest,
     //                                  int compressedSize,
     //                                  int maxDecompressedSize)
-    pub fn LZ4_decompress_safe_continue(LZ4_stream: *mut LZ4StreamDecode,
-                                        source: *const u8,
-                                        dest: *mut u8,
-                                        compressed_size: c_int,
-                                        max_decompressed_size: c_int)
-                                        -> c_int;
+    pub fn LZ4_decompress_safe_continue(
+        LZ4_stream: *mut LZ4StreamDecode,
+        source: *const u8,
+        dest: *mut u8,
+        compressed_size: c_int,
+        max_decompressed_size: c_int,
+    ) -> c_int;
 
     // int LZ4_freeStreamDecode(LZ4_streamDecode_t* LZ4_stream)
     pub fn LZ4_freeStreamDecode(LZ4_stream: *mut LZ4StreamDecode) -> c_int;
@@ -420,11 +452,38 @@ extern "C" {
     // and start a new one using same context resources.
     pub fn LZ4F_resetDecompressionContext(ctx: LZ4FDecompressionContext);
 
+    // extern void *rs_memmove(void *dst, const void *src, size_t size);
+    // extern void *rs_memcpy(void *dst, const void *src, size_t size);
+    // extern void *rs_memset(void *p, int v, size_t s);
+
+}
+
+pub extern "C" fn rs_memmove(dst: *mut c_void, src: *const c_void, size: size_t) -> *mut c_void {
+    unsafe {
+        core::ptr::copy(src, dst, size);
+    }
+    dst
+}
+
+pub extern "C" fn rs_memcpy(dst: *mut c_void, src: *const c_void, size: size_t) -> *mut c_void {
+    unsafe {
+        core::ptr::copy_nonoverlapping(src, dst, size);
+    }
+    dst
+}
+
+pub extern "C" fn rs_memset(p: *mut c_void, v: c_int, s: size_t) -> *mut c_void {
+    unsafe {
+        core::ptr::write_bytes(p as *mut u8, v as u8, s);
+    }
+    p
 }
 
 #[test]
 fn test_version_number() {
-    unsafe { LZ4_versionNumber(); }
+    unsafe {
+        LZ4_versionNumber();
+    }
 }
 
 #[test]

@@ -17,10 +17,10 @@ fn main() {
 fn run() -> Result<(), Box<dyn Error>> {
     let mut compiler = cc::Build::new();
     compiler
+        .flag(format!("-includecompat.h"))
         .file("liblz4/lib/lz4.c")
-        .file("liblz4/lib/lz4frame.c")
-        .file("liblz4/lib/lz4hc.c")
-        .file("liblz4/lib/xxhash.c")
+        .define("LZ4_USER_MEMORY_FUNCTIONS", "1")
+        .define("LZ4_FREESTANDING", "1")
         // We always compile the C with optimization, because otherwise it is 20x slower.
         .opt_level(3);
 
